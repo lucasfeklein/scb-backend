@@ -1,9 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import express from 'express';
 import { createServer } from 'http';
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 import { Server } from 'ws';
-
-
 
 const prisma = new PrismaClient()
 const app = express()
@@ -11,35 +10,50 @@ const app = express()
 const server = createServer(app);
 const wss = new Server({ server });
 
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
-const chatHistory: Record<string, string[]> = {};
+
+
+const chatHistory: Record<string, Array<ChatCompletionRequestMessage>> = {};
 
 
 app.use(express.json())
 
 
 wss.on('connection', (ws) => {
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     const { phoneNumber, text } = JSON.parse(message.toString());
 
     console.log(`Received message from ${phoneNumber}: ${text}`)
 
-    // Check if there's an existing chat with the given phone number
+
     if (!chatHistory[phoneNumber]) {
       chatHistory[phoneNumber] = [];
     }
 
     console.log(chatHistory[phoneNumber])
 
-    // Store the received message
-    chatHistory[phoneNumber].push(text);
 
-    // Here, you can implement the communication between the user and the LLM chatbot.
-    // For simplicity, I'll just echo the message back to the user.
-    const chatbotResponse = `LLM Chatbot: ${text}`;
+    chatHistory[phoneNumber].push({
+      role: "user",
+      content:  text
+    });
+
+    const completion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: chatHistory[phoneNumber],
+    });
+
+    const chatbotResponse = completion.data.choices[0].message?.content ?? ""
 
     // Store the chatbot's response
-    chatHistory[phoneNumber].push(chatbotResponse);
+    chatHistory[phoneNumber].push({
+      content: chatbotResponse,
+      role: "assistant"
+    });
 
     // Send the response back to the user
     ws.send(chatbotResponse);
