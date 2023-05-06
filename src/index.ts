@@ -99,6 +99,16 @@ Answer in the same language as the user's questions, be very detailed, giving as
   });
 });
 
+app.post(`/pinecone`, async (req, res) => {
+  const { phone } = req.body;
+  const result = await prisma.user.create({
+    data: {
+      phone,
+    },
+  });
+  res.json(result);
+});
+
 app.post(`/signup`, async (req, res) => {
   const { phone } = req.body;
 
