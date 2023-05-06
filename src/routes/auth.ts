@@ -22,6 +22,20 @@ router.post('/request-magic-link', async (req, res) => {
         });
     }
 
+    // Calculate the expiry time as the current time plus 30 minutes
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+
+    // Update the user with the new expiry time
+    user = await prisma.user.update({
+        where: {
+            email: email,
+        },
+        data: {
+            emailVerificationTokenExpiry: expiryTime,
+        },
+    });
+
     const magicLinkToken = user.emailVerificationToken;
     const magicLink = `https://example.com/auth/magic-link?token=${magicLinkToken}`;
 
@@ -53,6 +67,7 @@ router.post('/request-magic-link', async (req, res) => {
         }
     });
 });
+
 router.post('/verify-token', async (req, res) => {
     const { token } = req.body;
 
@@ -65,6 +80,12 @@ router.post('/verify-token', async (req, res) => {
 
     if (!user) {
         return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    // Check if the emailVerificationTokenExpiry has passed
+    const now = new Date();
+    if (user.emailVerificationTokenExpiry && user.emailVerificationTokenExpiry < now) {
+        return res.status(400).json({ error: 'Token has expired' });
     }
 
     // Respond with the user ID so the client can create a JWT or session for authentication
