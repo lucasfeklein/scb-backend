@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import * as dotenv from "dotenv";
 import express from 'express';
 import nodemailer from 'nodemailer';
+
+dotenv.config()
 
 const router = express.Router()
 const prisma = new PrismaClient();
@@ -45,7 +48,7 @@ router.post('/request-magic-link', async (req, res) => {
         secure: false,
         auth: {
             user: 'lucas.fklein@hotmail.com',
-            pass: 'llucas00',
+            pass: process.env.EMAIL_PASSWORD,
         },
     });
 
