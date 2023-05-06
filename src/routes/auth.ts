@@ -8,13 +8,21 @@ const prisma = new PrismaClient();
 router.post('/request-magic-link', async (req, res) => {
     const { email } = req.body; // get the email from the request body
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: {
             email: email,
         },
     });
 
-    const magicLinkToken = user?.emailVerificationToken;
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                email: email,
+            },
+        });
+    }
+
+    const magicLinkToken = user.emailVerificationToken;
     const magicLink = `https://example.com/auth/magic-link?token=${magicLinkToken}`;
 
     const transporter = nodemailer.createTransport({
@@ -23,8 +31,8 @@ router.post('/request-magic-link', async (req, res) => {
         secure: false,
         auth: {
             user: 'lucas.fklein@hotmail.com',
-            pass: 'llucas00'
-        }
+            pass: 'llucas00',
+        },
     });
 
     // Update the email options with the magic link and the recipient email
@@ -32,7 +40,7 @@ router.post('/request-magic-link', async (req, res) => {
         from: 'lucas.fklein@hotmail.com',
         to: email, // use the email from the request body
         subject: 'Magic Link to Login',
-        text: `Use this magic link to log in: ${magicLink}`
+        text: `Use this magic link to log in: ${magicLink}`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -45,5 +53,21 @@ router.post('/request-magic-link', async (req, res) => {
         }
     });
 });
+router.post('/verify-token', async (req, res) => {
+    const { token } = req.body;
 
+    // Find the user with the matching emailVerificationToken
+    const user = await prisma.user.findFirst({
+        where: {
+            emailVerificationToken: token,
+        },
+    });
+
+    if (!user) {
+        return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    // Respond with the user ID so the client can create a JWT or session for authentication
+    return res.json({ userId: user.id });
+});
 export default router
