@@ -1,21 +1,28 @@
+import { PineconeClient } from "@pinecone-database/pinecone";
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
-import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from "openai";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { Configuration, OpenAIApi } from "openai";
 import { Server } from "ws";
+
 dotenv.config();
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+const embeddings = new OpenAIEmbeddings();
+const client = new PineconeClient();
 
 const prisma = new PrismaClient();
 const app = express();
 
 const server = createServer(app);
 const wss = new Server({ server });
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
 
 app.use(express.json());
 
@@ -40,76 +47,55 @@ async function handleInit(phoneNumber: string) {
   });
 }
 
-wss.on("connection", (ws) => {
-  ws.on("message", async (message) => {
-    const { action, phoneNumber, text } = JSON.parse(message.toString());
+wss.on("connection", async (ws) => {
+  console.log('Client connected.');
 
-    if (action === "init") {
-      const messages = await handleInit(phoneNumber);
-      return ws.send(
-        JSON.stringify({
-          messages,
-        })
-      );
+  await client.init({
+    apiKey: process.env.PINECONE_API_KEY as string,
+    environment: process.env.PINECONE_API_ENV as string,
+  });
+  const pineconeIndex = client.Index(process.env.PINECONE_INDEX as string);
+  const vectorStore = await PineconeStore.fromExistingIndex(
+    embeddings,
+    { pineconeIndex, namespace: "https://dynamicpoa.com/" }
+  );
+
+  // Send a message to the client when it connects
+  ws.send('Hello! How can I assist you today?');
+
+  ws.on("message", async (message) => {
+    console.log(`Received message from client: ${message}`);
+
+    const question = message.toString()
+
+    const documents = await vectorStore.similaritySearch(question, 10)
+    let bigText = ""
+
+    for (let i = 0; i < documents.length; i++) {
+      let pageContent = documents[i].pageContent
+      bigText += pageContent.replace(/\n/g, " ")
     }
 
-    const user = await prisma.user.findUniqueOrThrow({
-      where: {
-        phone: phoneNumber,
-      },
-    });
+    const prompt = `You are an AI assistant who receives questions based on the content below.
 
-    await prisma.message.create({
-      data: {
-        content: text,
-        role: "user",
-        userId: user.id,
-      },
-    });
+Content: ###
+${bigText}
+###
 
-    const previousMessages = await prisma.message.findMany({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    console.log("previousMessages");
-    console.log(previousMessages);
-
-    const chatHistory: ChatCompletionRequestMessage[] = [
-      {
-        role: "system",
-        content:
-          "You are a helpful assistant that is also fanatic with the Brazilian team Grêmio. You mention Grêmio all the time",
-      },
-      ...previousMessages.map((message) => ({
-        role: message.role as "user" | "assistant" | "system",
-        content: message.content,
-      })),
-    ];
-
-    console.log("chatHistory");
-    console.log(chatHistory);
+Answer in the same language as the user's questions, be very detailed, giving as much information as possible.
+`
 
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      messages: chatHistory,
+      messages: [
+        { role: "system", content: prompt },
+        { role: "user", content: question }
+      ],
+      temperature: 0,
     });
 
-    const chatbotResponse = completion.data.choices[0].message?.content ?? "";
-
-    console.log("chatbotResponse");
-    console.log(chatbotResponse);
-
-    await prisma.message.create({
-      data: {
-        content: chatbotResponse,
-        role: "assistant",
-        userId: user.id,
-      },
-    }),
-      // Send the response back to the user
-      ws.send(JSON.stringify({ response: chatbotResponse }));
+    // Send a response back to the client
+    ws.send(`${completion.data.choices[0].message?.content}`);
   });
 });
 
