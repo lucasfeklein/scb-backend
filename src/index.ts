@@ -5,6 +5,7 @@ import express from "express";
 import { createServer } from "http";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
+import nodemailer from 'nodemailer';
 import { Configuration, OpenAIApi } from "openai";
 import { Server } from "ws";
 
@@ -25,27 +26,6 @@ const server = createServer(app);
 const wss = new Server({ server });
 
 app.use(express.json());
-
-async function handleInit(phoneNumber: string) {
-  const user = await prisma.user.upsert({
-    where: {
-      phone: phoneNumber,
-    },
-    update: {},
-    create: {
-      phone: phoneNumber,
-    },
-  });
-
-  return await prisma.message.findMany({
-    where: {
-      userId: user.id,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-}
 
 wss.on("connection", async (ws) => {
   console.log('Client connected.');
@@ -99,25 +79,48 @@ Answer in the same language as the user's questions, be very detailed, giving as
   });
 });
 
-app.post(`/pinecone`, async (req, res) => {
-  const { phone } = req.body;
-  const result = await prisma.user.create({
-    data: {
-      phone,
+app.post('/auth/request-magic-link', async (req, res) => {
+  const { email } = req.body; // get the email from the request body
+
+  const user = await prisma.user.findUnique({
+    where: {
+      email: email,
     },
   });
-  res.json(result);
+
+  const magicLinkToken = user?.emailVerificationToken;
+  const magicLink = `https://example.com/auth/magic-link?token=${magicLinkToken}`;
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.office365.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'lucas.fklein@hotmail.com',
+      pass: 'llucas00'
+    }
+  });
+
+  // Update the email options with the magic link and the recipient email
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: 'lucas.fklein@hotmail.com',
+    to: email, // use the email from the request body
+    subject: 'Magic Link to Login',
+    text: `Use this magic link to log in: ${magicLink}`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error(error);
+      res.status(500).send('Error sending email');
+    } else {
+      console.log('Email sent: ' + info.response);
+      res.send('Email sent successfully');
+    }
+  });
 });
 
 app.post(`/signup`, async (req, res) => {
-  const { phone } = req.body;
-
-  const result = await prisma.user.create({
-    data: {
-      phone,
-    },
-  });
-  res.json(result);
 });
 
 server.listen(3000, () =>
