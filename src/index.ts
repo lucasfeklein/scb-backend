@@ -81,9 +81,6 @@ Answer in the same language as the user's questions, be very detailed, giving as
 
 app.use('/auth', auth)
 
-app.post(`/signup`, async (req, res) => {
-});
-
 server.listen(3000, () =>
   console.log(`
 🚀 Server ready at: http://localhost:3000
