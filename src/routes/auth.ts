@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import express from 'express';
 import nodemailer from 'nodemailer';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config()
 
@@ -11,36 +12,27 @@ const prisma = new PrismaClient();
 router.post('/request-magic-link', async (req, res) => {
     const { email } = req.body; // get the email from the request body
 
-    let user = await prisma.user.findUnique({
-        where: {
-            email: email,
-        },
-    });
-
-    if (!user) {
-        user = await prisma.user.create({
-            data: {
-                email: email,
-            },
-        });
-    }
-
     // Calculate the expiry time as the current time plus 30 minutes
     const expiryTime = new Date();
     expiryTime.setMinutes(expiryTime.getMinutes() + 30);
 
-    // Update the user with the new expiry time
-    user = await prisma.user.update({
+    const user = await prisma.user.upsert({
         where: {
             email: email,
         },
-        data: {
+        update: {
             emailVerificationTokenExpiry: expiryTime,
+            emailVerificationToken: uuidv4(),
         },
-    });
+        create: {
+            email: email,
+            emailVerificationTokenExpiry: expiryTime,
+            emailVerificationToken: uuidv4(),
+        },
+    })
 
     const magicLinkToken = user.emailVerificationToken;
-    const magicLink = `https://example.com/auth/magic-link?token=${magicLinkToken}`;
+    const magicLink = `https://localhost:3000/auth/magic-link?token=${magicLinkToken}`;
 
     const transporter = nodemailer.createTransport({
         host: 'smtp.office365.com',
