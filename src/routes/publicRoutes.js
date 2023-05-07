@@ -64,7 +64,7 @@ router.post("/request-magic-link", async (req, res) => {
   });
 });
 
-router.post("/verify-token", async (req, res) => {
+router.post("/verify-magic-link", async (req, res) => {
   const { token } = req.body;
 
   // Find the user with the matching emailVerificationToken

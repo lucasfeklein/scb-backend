@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { pinecone } from "./config/pinecone.js";
+import { prisma } from "./config/prisma.js";
 import routes from "./routes/index.js";
 
 const configuration = new Configuration({
@@ -18,8 +19,29 @@ const embeddings = new OpenAIEmbeddings();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-wss.on("connection", async (ws) => {
-  console.log("Client connected.");
+async function verifyHostname(hostname) {
+  if (!(hostname && hostname.length > 0)) return false;
+
+  const company = await prisma.company.findUnique({
+    where: {
+      website: hostname,
+    },
+  });
+
+  return company !== null;
+}
+
+wss.on("connection", async (ws, request) => {
+  const url = new URL(request.url, `http://${request.headers.host}`);
+  const hostname = url.searchParams.get("hostname");
+
+  const isHostnameValid = await verifyHostname(hostname);
+
+  if (!isHostnameValid) {
+    ws.send("Invalid hostname");
+    ws.close();
+    return;
+  }
 
   await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
