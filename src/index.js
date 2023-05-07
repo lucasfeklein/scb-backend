@@ -94,8 +94,8 @@ Answer in the same language as the user's questions, be very detailed, giving as
 
 app.use("", routes);
 
-server.listen(3000, () =>
+server.listen(8000, () =>
   console.log(`
-🚀 Server ready at: http://localhost:3000
+🚀 Server ready at: http://localhost:8000
 ⭐️ See sample requests: http://pris.ly/e/ts/rest-express#3-using-the-rest-api`)
 );
