@@ -12,4 +12,13 @@ model User {
   email                        String    @unique
   emailVerificationToken       String?
   emailVerificationTokenExpiry DateTime?
+  company                      Company[]
+}
+
+model Company {
+  id   Int    @id @default(autoincrement())
+  name String
+  website String @unique
+  userId Int
+  user User @relation(fields: [userId], references: [id])
 }

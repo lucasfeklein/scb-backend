@@ -1,59 +1,54 @@
 import { PineconeClient } from "@pinecone-database/pinecone";
-import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
-import express from "express";
 import { createServer } from "http";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { Configuration, OpenAIApi } from "openai";
-import { Server } from "ws";
-import auth from './routes/auth';
+import { WebSocketServer } from "ws";
+import app from "./app.js";
+import { env } from "./config/env.js";
+import routes from "./routes/index.js";
 
 dotenv.config();
 
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
 const embeddings = new OpenAIEmbeddings();
 const client = new PineconeClient();
 
-const prisma = new PrismaClient();
-const app = express();
-
 const server = createServer(app);
-const wss = new Server({ server });
-
-app.use(express.json());
+const wss = new WebSocketServer({ server });
 
 wss.on("connection", async (ws) => {
-  console.log('Client connected.');
+  console.log("Client connected.");
 
   await client.init({
-    apiKey: process.env.PINECONE_API_KEY as string,
-    environment: process.env.PINECONE_API_ENV as string,
+    apiKey: env.PINECONE_API_KEY,
+    environment: env.PINECONE_API_ENV,
   });
-  const pineconeIndex = client.Index(process.env.PINECONE_INDEX as string);
-  const vectorStore = await PineconeStore.fromExistingIndex(
-    embeddings,
-    { pineconeIndex, namespace: "https://dynamicpoa.com/" }
-  );
+  const pineconeIndex = client.Index(env.PINECONE_INDEX);
+  const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
+    pineconeIndex,
+    namespace: "https://dynamicpoa.com/",
+  });
 
   // Send a message to the client when it connects
-  ws.send('Hello! How can I assist you today?');
+  ws.send("Hello! How can I assist you today?");
 
   ws.on("message", async (message) => {
     console.log(`Received message from client: ${message}`);
 
-    const question = message.toString()
+    const question = message.toString();
 
-    const documents = await vectorStore.similaritySearch(question, 10)
-    let bigText = ""
+    const documents = await vectorStore.similaritySearch(question, 10);
+    let bigText = "";
 
     for (let i = 0; i < documents.length; i++) {
-      let pageContent = documents[i].pageContent
-      bigText += pageContent.replace(/\n/g, " ")
+      let pageContent = documents[i].pageContent;
+      bigText += pageContent.replace(/\n/g, " ");
     }
 
     const prompt = `You are an AI assistant who receives questions based on the content below.
@@ -63,13 +58,13 @@ ${bigText}
 ###
 
 Answer in the same language as the user's questions, be very detailed, giving as much information as possible.
-`
+`;
 
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: prompt },
-        { role: "user", content: question }
+        { role: "user", content: question },
       ],
       temperature: 0,
     });
@@ -79,7 +74,7 @@ Answer in the same language as the user's questions, be very detailed, giving as
   });
 });
 
-app.use('/auth', auth)
+app.use("", routes);
 
 server.listen(3000, () =>
   console.log(`
