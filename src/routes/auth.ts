@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -83,7 +84,14 @@ router.post('/verify-token', async (req, res) => {
         return res.status(400).json({ error: 'Token has expired' });
     }
 
-    // Respond with the user ID so the client can create a JWT or session for authentication
-    return res.json({ userId: user.id });
+    // Create a JWT with the user's ID and email as the payload
+    const payload = user.id.toString()
+    const jwtSecret = process.env.JWT_SECRET as string; // replace with your own secret
+    const tokenJwt = jwt.sign(payload, jwtSecret);
+
+    const decoded = jwt.decode(tokenJwt)
+
+    // Respond with the JWT
+    return res.json({ token: tokenJwt });
 });
 export default router
