@@ -13,7 +13,7 @@ const authMiddleware = (req, res, next) => {
   }
 
   // The header should be in the format: "Bearer <token>"
-  const token = authHeader.split(" ")[1];
+  const token = authHeader;
 
   if (!token) {
     return res.status(401).json({ message: "Token is missing" });

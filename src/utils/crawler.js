@@ -1,9 +1,52 @@
 import axios from "axios";
+import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import puppeteer from "puppeteer";
 import xml2js from "xml2js";
+import { env } from "../config/env.js";
+import { pinecone } from "../config/pinecone.js";
+
+import { PineconeStore } from "langchain/vectorstores/pinecone";
+
+export async function processWebsite({ hostname }) {
+  const urls = await crawlWebsite(`https://${hostname}`);
+
+  console.log("urls");
+  console.log(urls);
+  const docs = [];
+
+  await pinecone.init({
+    apiKey: env.PINECONE_API_KEY,
+    environment: env.PINECONE_API_ENV,
+  });
+  const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
+
+  for (const url of urls) {
+    const loader = new PuppeteerWebBaseLoader(url);
+    const doc = await loader.load();
+    docs.push(...doc); // use spread operator to flatten the array
+  }
+  const docsTextOnly = await stripHtmlFromDocs(docs);
+
+  console.log("docsTextOnly");
+  console.log(docsTextOnly);
+
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 0,
+  });
+  const docOutput = await splitter.splitDocuments(docsTextOnly);
+  console.log("docOutput");
+  console.log(docOutput);
+  await PineconeStore.fromDocuments(docOutput, new OpenAIEmbeddings(), {
+    pineconeIndex,
+    namespace: hostname,
+  });
+}
 
 // function tu remove all the html tags from docs
-export async function stripHtmlFromDocs(docs) {
+async function stripHtmlFromDocs(docs) {
   const { stripHtml } = await import("string-strip-html");
   const strippedDocs = [];
   for (const doc of docs) {
@@ -17,7 +60,7 @@ export async function stripHtmlFromDocs(docs) {
 }
 
 // crawler
-export async function crawlWebsite(homepageUrl) {
+async function crawlWebsite(homepageUrl) {
   try {
     const response = await axios.get(`${homepageUrl}/sitemap.xml`);
     const xmlData = response.data;

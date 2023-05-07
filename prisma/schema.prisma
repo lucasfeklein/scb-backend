@@ -19,6 +19,7 @@ model Company {
   id   Int    @id @default(autoincrement())
   name String
   website String @unique
+  token String @unique @default(uuid())
   userId Int
   user User @relation(fields: [userId], references: [id])
 }

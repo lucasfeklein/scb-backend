@@ -1,5 +1,3 @@
-import { PineconeClient } from "@pinecone-database/pinecone";
-import * as dotenv from "dotenv";
 import { createServer } from "http";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
@@ -7,9 +5,8 @@ import { Configuration, OpenAIApi } from "openai";
 import { WebSocketServer } from "ws";
 import app from "./app.js";
 import { env } from "./config/env.js";
+import { pinecone } from "./config/pinecone.js";
 import routes from "./routes/index.js";
-
-dotenv.config();
 
 const configuration = new Configuration({
   apiKey: env.OPENAI_API_KEY,
@@ -17,7 +14,6 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const embeddings = new OpenAIEmbeddings();
-const client = new PineconeClient();
 
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -25,7 +21,7 @@ const wss = new WebSocketServer({ server });
 wss.on("connection", async (ws) => {
   console.log("Client connected.");
 
-  await client.init({
+  await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
     environment: env.PINECONE_API_ENV,
   });
