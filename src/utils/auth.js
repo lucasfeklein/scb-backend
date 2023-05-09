@@ -12,8 +12,13 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ message: "Authorization header is missing" });
   }
 
-  // The header should be in the format: "Bearer <token>"
-  const token = authHeader;
+  // Check if the header starts with "Bearer "
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: "Invalid token format" });
+  }
+
+  // Extract the token without the "Bearer " prefix
+  const token = authHeader.slice(7);
 
   if (!token) {
     return res.status(401).json({ message: "Token is missing" });
@@ -32,3 +37,4 @@ const authMiddleware = (req, res, next) => {
 };
 
 export { authMiddleware };
+
