@@ -53,6 +53,8 @@ wss.on("connection", async (ws, request) => {
     namespace: "https://dynamicpoa.com/",
   });
 
+  console.log("Client connected");
+
   ws.on("message", async (message) => {
     console.log(`Received message from client: ${message}`);
 
