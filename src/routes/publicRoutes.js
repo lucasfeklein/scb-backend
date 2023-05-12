@@ -64,6 +64,10 @@ router.post("/request-magic-link", async (req, res) => {
   });
 });
 
+router.get("/", (req, res) => {
+  return res.status(200).json({ message: "ok" });
+});
+
 router.post("/verify-magic-link", async (req, res) => {
   const { token } = req.body;
 
