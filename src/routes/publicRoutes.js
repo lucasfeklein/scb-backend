@@ -30,7 +30,7 @@ router.post("/request-magic-link", async (req, res) => {
   });
 
   const magicLinkToken = user.emailVerificationToken;
-  const magicLink = `http://localhost:3000/magic-link?token=${magicLinkToken}`;
+  const magicLink = `${env.FRONTEND_URL}/magic-link?token=${magicLinkToken}`;
 
   const transporter = nodemailer.createTransport({
     host: "smtp.office365.com",

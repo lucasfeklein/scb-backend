@@ -10,6 +10,7 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
   PORT: process.env.PORT,
+  FRONTEND_URL: process.env.FRONTEND_URL,
 };
 
 export { env };
