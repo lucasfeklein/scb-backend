@@ -9,6 +9,7 @@ const env = {
   PINECONE_INDEX: process.env.PINECONE_INDEX,
   JWT_SECRET: process.env.JWT_SECRET,
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+  PORT: process.env.PORT,
 };
 
 export { env };

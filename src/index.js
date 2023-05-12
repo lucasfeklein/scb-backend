@@ -93,8 +93,8 @@ Answer in the same language as the user's questions, be very detailed, giving as
 
 app.use("", routes);
 
-server.listen(8000, () =>
+server.listen(env.PORT, () =>
   console.log(`
-🚀 Server ready at: http://localhost:8000
+🚀 Server ready at: http://localhost:${env.PORT}
 ⭐️ See sample requests: http://pris.ly/e/ts/rest-express#3-using-the-rest-api`)
 );
