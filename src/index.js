@@ -35,13 +35,13 @@ wss.on("connection", async (ws, request) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const hostname = url.searchParams.get("hostname");
 
-  // const isHostnameValid = await verifyHostname(hostname);
+  const isHostnameValid = await verifyHostname(hostname);
 
-  // if (!isHostnameValid) {
-  //   ws.send("Invalid hostname");
-  //   ws.close();
-  //   return;
-  // }
+  if (!isHostnameValid) {
+    ws.send("Invalid hostname");
+    ws.close();
+    return;
+  }
 
   await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
@@ -50,7 +50,7 @@ wss.on("connection", async (ws, request) => {
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
   const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
     pineconeIndex,
-    namespace: "https://dynamicpoa.com/",
+    namespace: hostname,
   });
 
   console.log("Client connected");

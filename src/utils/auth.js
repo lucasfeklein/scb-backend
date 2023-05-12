@@ -13,7 +13,7 @@ const authMiddleware = (req, res, next) => {
   }
 
   // Check if the header starts with "Bearer "
-  if (!authHeader.startsWith('Bearer ')) {
+  if (!authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Invalid token format" });
   }
 
@@ -37,4 +37,3 @@ const authMiddleware = (req, res, next) => {
 };
 
 export { authMiddleware };
-
