@@ -59,7 +59,7 @@ async function stripHtmlFromDocs(docs) {
 }
 
 // crawler
-async function crawlWebsite(homepageUrl) {
+export async function crawlWebsite(homepageUrl) {
   try {
     const response = await axios.get(`${homepageUrl}/sitemap.xml`);
     const xmlData = response.data;
@@ -71,6 +71,7 @@ async function crawlWebsite(homepageUrl) {
     console.log(urls);
     return urls;
   } catch (error) {
+    console.log("teste");
     const visitedUrls = new Set(); // Use a Set to keep track of visited urls
     const urlsToVisit = [homepageUrl]; // Initialize urls to visit with the homepage url
     const hrefs = new Set(); // Use a Set to remove duplicates
@@ -84,6 +85,7 @@ async function crawlWebsite(homepageUrl) {
         const res = await axios.get(currentUrl);
         const $ = cheerio.load(res.data);
         const links = $("a"); // Select all anchor tags
+        console.log(links);
         links.each((i, link) => {
           const href = $(link).attr("href");
           if (href && href.startsWith("/")) {

@@ -91,6 +91,10 @@ Answer in the same language as the user's questions, be very detailed, giving as
   });
 });
 
+app.get("/teste", (req, res) => {
+  return "ok";
+});
+
 app.use("", routes);
 
 server.listen(env.PORT, () =>
