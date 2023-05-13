@@ -25,10 +25,10 @@ export async function processWebsite({ hostname }) {
     docs.push(...doc); // use spread operator to flatten the array
   }
   const docsTextOnly = await stripHtmlFromDocs(docs);
-
+  console.log("7");
   console.log("docsTextOnly");
   console.log(docsTextOnly);
-
+  console.log("8");
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 0,
