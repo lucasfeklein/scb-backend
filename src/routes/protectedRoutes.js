@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.post("/company", authMiddleware, async (req, res) => {
   const { name, website } = req.body;
-
+  console.log("1");
   const url = new URL(website);
-
+  console.log("2");
   const company = await prisma.company.upsert({
     where: {
       website: url.hostname,
@@ -21,11 +21,11 @@ router.post("/company", authMiddleware, async (req, res) => {
       website: url.hostname,
     },
   });
-
+  console.log("3");
   await processWebsite({
     hostname: url.hostname,
   });
-
+  console.log("4");
   return res.json(company);
 });
 
