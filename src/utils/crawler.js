@@ -1,25 +1,22 @@
 import axios from "axios";
+import cheerio from "cheerio";
 import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import puppeteer from "puppeteer";
+import { PineconeStore } from "langchain/vectorstores/pinecone";
 import xml2js from "xml2js";
 import { env } from "../config/env.js";
 import { pinecone } from "../config/pinecone.js";
 
-import { PineconeStore } from "langchain/vectorstores/pinecone";
-
 export async function processWebsite({ hostname }) {
   const urls = await crawlWebsite(`https://${hostname}`);
 
-  console.log("urls");
-  console.log(urls);
   const docs = [];
-
   await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
     environment: env.PINECONE_API_ENV,
   });
+
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
 
   for (const url of urls) {
@@ -45,7 +42,7 @@ export async function processWebsite({ hostname }) {
   });
 }
 
-// function tu remove all the html tags from docs
+// function to remove all the html tags from docs
 async function stripHtmlFromDocs(docs) {
   const { stripHtml } = await import("string-strip-html");
   const strippedDocs = [];
@@ -72,20 +69,36 @@ async function crawlWebsite(homepageUrl) {
     console.log(urls);
     return urls;
   } catch (error) {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(homepageUrl);
-
-    const links = await page.$$eval("a", (links) => links.map((a) => a.href));
-
-    await browser.close();
-
-    const homepage_url = new URL(homepageUrl);
-    const linksFiltered = links
-      .filter((link) => link.startsWith(homepage_url.origin))
-      .filter((link) => !link.includes("#"))
-      .filter((link, index, array) => array.indexOf(link) === index);
-    console.log(linksFiltered);
-    return linksFiltered;
+    const visitedUrls = new Set(); // Use a Set to keep track of visited urls
+    const urlsToVisit = [homepageUrl]; // Initialize urls to visit with the homepage url
+    const hrefs = new Set(); // Use a Set to remove duplicates
+    while (urlsToVisit.length > 0) {
+      const currentUrl = urlsToVisit.shift(); // Get the next url to visit from the front of the urlsToVisit array
+      if (visitedUrls.has(currentUrl)) {
+        continue; // Skip urls that have already been visited
+      }
+      visitedUrls.add(currentUrl); // Mark the current url as visited
+      try {
+        const res = await axios.get(currentUrl);
+        const $ = cheerio.load(res.data);
+        const links = $("a"); // Select all anchor tags
+        links.each((i, link) => {
+          const href = $(link).attr("href");
+          if (href && href.startsWith("/")) {
+            const absoluteUrl = new URL(href, currentUrl).href; // Convert the relative url to an absolute url
+            if (!visitedUrls.has(absoluteUrl)) {
+              // Add the absolute url to urlsToVisit if it hasn't been visited yet
+              urlsToVisit.push(absoluteUrl);
+            }
+            hrefs.add(decodeURIComponent(absoluteUrl)); // Add the absolute url to the hrefs Set
+          }
+        });
+      } catch (error) {
+        console.log(`Error while crawling ${currentUrl}: ${error.message}`);
+      }
+    }
+    const uniqueHrefs = [...hrefs]; // Convert Set back to array
+    console.log(uniqueHrefs);
+    return uniqueHrefs;
   }
 }
