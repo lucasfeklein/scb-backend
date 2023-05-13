@@ -24,6 +24,7 @@ export async function processWebsite({ hostname }) {
     const doc = await loader.load();
     docs.push(...doc); // use spread operator to flatten the array
   }
+  console.log(urls);
   const docsTextOnly = await stripHtmlFromDocs(docs);
   console.log("7");
   console.log("docsTextOnly");
