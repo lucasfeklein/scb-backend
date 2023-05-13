@@ -1,6 +1,7 @@
 import axios from "axios";
 import cheerio from "cheerio";
-import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
+// import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
+import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
@@ -20,7 +21,7 @@ export async function processWebsite({ hostname }) {
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
   console.log("6");
   for (const url of urls) {
-    const loader = new PuppeteerWebBaseLoader(url);
+    const loader = new CheerioWebBaseLoader(url);
     const doc = await loader.load();
     docs.push(...doc); // use spread operator to flatten the array
   }
