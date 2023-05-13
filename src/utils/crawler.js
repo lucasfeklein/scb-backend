@@ -16,9 +16,9 @@ export async function processWebsite({ hostname }) {
     apiKey: env.PINECONE_API_KEY,
     environment: env.PINECONE_API_ENV,
   });
-
+  console.log("5");
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
-
+  console.log("6");
   for (const url of urls) {
     const loader = new PuppeteerWebBaseLoader(url);
     const doc = await loader.load();
