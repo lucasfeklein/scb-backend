@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import { pinecone } from "./config/pinecone.js";
 import { prisma } from "./config/prisma.js";
 import routes from "./routes/index.js";
+import { processWebsite } from "./utils/crawler.js";
 
 const configuration = new Configuration({
   apiKey: env.OPENAI_API_KEY,
@@ -92,6 +93,7 @@ Answer in the same language as the user's questions, be very detailed, giving as
 });
 
 app.get("/teste", (req, res) => {
+  processWebsite({ hostname: "dynamicpoa.com" });
   return "ok";
 });
 

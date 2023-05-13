@@ -1,8 +1,6 @@
 import axios from "axios";
 import cheerio from "cheerio";
-// import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
 import { CheerioWebBaseLoader } from "langchain/document_loaders/web/cheerio";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import xml2js from "xml2js";
@@ -10,16 +8,20 @@ import { env } from "../config/env.js";
 import { pinecone } from "../config/pinecone.js";
 
 export async function processWebsite({ hostname }) {
-  const urls = await crawlWebsite(`https://${hostname}`);
+  let urls = await crawlSitemap(`https://${hostname}`);
+
+  if (!urls) {
+    urls = await crawlCheerio(`https://${hostname}`);
+  }
 
   const docs = [];
   await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
     environment: env.PINECONE_API_ENV,
   });
-  console.log("5");
+
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
-  console.log("6");
+
   for (const url of urls) {
     const loader = new CheerioWebBaseLoader(url);
     const doc = await loader.load();
@@ -27,10 +29,10 @@ export async function processWebsite({ hostname }) {
   }
   console.log(urls);
   const docsTextOnly = await stripHtmlFromDocs(docs);
-  console.log("7");
+
   console.log("docsTextOnly");
   console.log(docsTextOnly);
-  console.log("8");
+
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 0,
@@ -59,7 +61,7 @@ async function stripHtmlFromDocs(docs) {
 }
 
 // crawler
-export async function crawlWebsite(homepageUrl) {
+export async function crawlSitemap(homepageUrl) {
   try {
     const response = await axios.get(`${homepageUrl}/sitemap.xml`);
     const xmlData = response.data;
@@ -71,38 +73,43 @@ export async function crawlWebsite(homepageUrl) {
     console.log(urls);
     return urls;
   } catch (error) {
-    console.log("teste");
-    const visitedUrls = new Set(); // Use a Set to keep track of visited urls
-    const urlsToVisit = [homepageUrl]; // Initialize urls to visit with the homepage url
-    const hrefs = new Set(); // Use a Set to remove duplicates
-    while (urlsToVisit.length > 0) {
-      const currentUrl = urlsToVisit.shift(); // Get the next url to visit from the front of the urlsToVisit array
-      if (visitedUrls.has(currentUrl)) {
-        continue; // Skip urls that have already been visited
+    console.log("Site has no sitemap, going to crawl with cheerio");
+    return "";
+  }
+}
+
+export async function crawlCheerio(url, crawledUrls = new Set()) {
+  // Avoid re-crawling the same URL
+  if (crawledUrls.has(url)) return [];
+  crawledUrls.add(url);
+
+  const crawledUrlsArray = [];
+
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+
+    // Find and crawl all links
+    const links = $("a").toArray(); // Convert to array
+
+    for (const element of links) {
+      const link = $(element).attr("href");
+
+      // Check if link is relative
+      if (link && link.startsWith("/") && link.length > 1) {
+        const newUrl = new URL(link, url).href; // Convert to absolute URL
+        const childUrls = await crawlCheerio(newUrl, crawledUrls); // Await the recursive call
+        crawledUrlsArray.push(...childUrls);
       }
-      visitedUrls.add(currentUrl); // Mark the current url as visited
-      try {
-        const res = await axios.get(currentUrl);
-        const $ = cheerio.load(res.data);
-        const links = $("a"); // Select all anchor tags
-        console.log(links);
-        links.each((i, link) => {
-          const href = $(link).attr("href");
-          if (href && href.startsWith("/")) {
-            const absoluteUrl = new URL(href, currentUrl).href; // Convert the relative url to an absolute url
-            if (!visitedUrls.has(absoluteUrl)) {
-              // Add the absolute url to urlsToVisit if it hasn't been visited yet
-              urlsToVisit.push(absoluteUrl);
-            }
-            hrefs.add(decodeURIComponent(absoluteUrl)); // Add the absolute url to the hrefs Set
-          }
-        });
-      } catch (error) {
-        console.log(`Error while crawling ${currentUrl}: ${error.message}`);
+      // Check if link is absolute and from the same domain
+      else if (link && link.startsWith(url)) {
+        const childUrls = await crawlCheerio(link, crawledUrls); // Await the recursive call
+        crawledUrlsArray.push(...childUrls);
       }
     }
-    const uniqueHrefs = [...hrefs]; // Convert Set back to array
-    console.log(uniqueHrefs);
-    return uniqueHrefs;
+  } catch (error) {
+    console.error(`Failed to crawl "${url}": ${error.message}`);
   }
+  const decodedUrl = decodeURIComponent(url);
+  return [decodedUrl, ...crawledUrlsArray];
 }
