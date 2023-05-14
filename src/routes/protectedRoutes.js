@@ -1,7 +1,11 @@
 import express from "express";
 import { prisma } from "../config/prisma.js";
 import { authMiddleware } from "../utils/auth.js";
-import { processWebsite } from "../utils/crawler.js";
+import {
+  crawlCheerio,
+  crawlSitemap,
+  processWebsite,
+} from "../utils/crawler.js";
 
 const router = express.Router();
 
@@ -52,6 +56,22 @@ router.get("/auth-verify", authMiddleware, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/fetch-urls", authMiddleware, async (req, res) => {
+  const { website } = req.body;
+  try {
+    let urls = await crawlSitemap(website);
+    if (urls) {
+      res.status(200).json({ urls });
+    } else {
+      urls = await crawlCheerio(website);
+      res.status(200).json({ urls });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: err });
   }
 });
 
