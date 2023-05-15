@@ -32,26 +32,38 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
 });
 
 router.post("/widget", authMiddleware, async (req, res) => {
-  const { website } = req.body;
+  const { companyId, website } = req.body;
 
   const url = new URL(website);
 
-  const company = await prisma.company.upsert({
-    where: {
-      website: url.hostname,
-    },
-    update: {},
-    create: {
-      userId: req.userId,
-      website: url.hostname,
-    },
-  });
+  try {
+    await prisma.company.update({
+      where: {
+        id: companyId,
+      },
+      data: {
+        website: url.hostname,
+      },
+    });
 
-  await processWebsite({
-    hostname: url.hostname,
-  });
+    await processWebsite({
+      hostname: url.hostname,
+    });
 
-  return res.json(company);
+    const company = await prisma.company.update({
+      where: {
+        id: companyId,
+      },
+      data: {
+        isReady: true,
+      },
+    });
+
+    return res.json(company);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
 });
 
 router.get("/auth-verify", authMiddleware, async (req, res) => {
