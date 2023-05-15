@@ -54,7 +54,9 @@ async function stripHtmlFromDocs(docs) {
   const { stripHtml } = await import("string-strip-html");
   const strippedDocs = [];
   for (const doc of docs) {
-    const strippedContent = stripHtml(doc.pageContent).result;
+    const strippedContent = stripHtml(doc.pageContent)
+      .result.replace(/\n/g, " ")
+      .replace(/\s/g, " ");
     strippedDocs.push({
       ...doc,
       pageContent: strippedContent,
