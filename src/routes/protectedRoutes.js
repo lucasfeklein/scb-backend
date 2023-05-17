@@ -89,7 +89,7 @@ router.get("/auth-verify", authMiddleware, async (req, res) => {
 });
 
 router.get("/fetch-urls", authMiddleware, async (req, res) => {
-  const { website } = req.body;
+  const { website } = req.query;
   try {
     let urls = await crawlSitemap(website);
     if (urls) {
