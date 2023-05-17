@@ -32,8 +32,6 @@ router.post("/request-magic-link", async (req, res) => {
   const magicLinkToken = user.emailVerificationToken;
   const magicLink = `${env.FRONTEND_URL}/magic-link?token=${magicLinkToken}`;
 
-  console.log("before send email");
-
   const emailData = {
     sender: {
       name: "IAssistente",
