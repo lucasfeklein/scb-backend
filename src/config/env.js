@@ -11,6 +11,7 @@ const env = {
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
   PORT: process.env.PORT,
   FRONTEND_URL: process.env.FRONTEND_URL,
+  BREVO_API_KEY: process.env.BREVO_API_KEY,
 };
 
 export { env };

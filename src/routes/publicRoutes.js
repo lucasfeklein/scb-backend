@@ -1,6 +1,6 @@
+import axios from "axios";
 import express from "express";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
@@ -32,36 +32,41 @@ router.post("/request-magic-link", async (req, res) => {
   const magicLinkToken = user.emailVerificationToken;
   const magicLink = `${env.FRONTEND_URL}/magic-link?token=${magicLinkToken}`;
 
-  const transporter = nodemailer.createTransport({
-    host: "smtp.office365.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: "lucas.fklein@hotmail.com",
-      pass: env.EMAIL_PASSWORD,
-    },
-  });
+  console.log("before send email");
 
-  // Update the email options with the magic link and the recipient email
-  const mailOptions = {
-    from: "lucas.fklein@hotmail.com",
-    to: email, // use the email from the request body
-    subject: "Magic Link to Login",
-    text: `Use this magic link to log in: ${magicLink}`,
+  const emailData = {
+    sender: {
+      name: "Sender IAssisnte",
+      email: "suporte@iassistente.com",
+    },
+    to: [
+      {
+        email: user.email,
+        name: user.name,
+      },
+    ],
+    subject: "Hello world",
+    htmlContent: `<html><head></head><body><p>Olá${
+      user.name ? ` ${user.name}` : ""
+    },</p>Estamos felizes em fornecer acesso à nossa plataforma. Para fazer login com segurança, basta clicar no seguinte link:</p><a href='${magicLink}'>${magicLink}</p></body></html>`,
   };
 
-  console.log("Sending email...");
-  console.log(mailOptions);
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send("Error sending email");
-    } else {
-      console.log("Email sent: " + info.response);
-      return res.send("Email sent successfully");
-    }
-  });
+  axios
+    .post("https://api.brevo.com/v3/smtp/email", emailData, {
+      headers: {
+        Accept: "application/json",
+        "api-key": env.BREVO_API_KEY,
+        "Content-Type": "application/json",
+      },
+    })
+    .then(function (response) {
+      console.log("Email sent successfully:", response.data);
+      res.send("Email sent successfully");
+    })
+    .catch(function (error) {
+      console.error("Error sending email:", error.response.data);
+      res.send("Error sending email");
+    });
 });
 
 router.get("/", (req, res) => {
