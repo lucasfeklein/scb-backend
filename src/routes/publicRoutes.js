@@ -36,7 +36,7 @@ router.post("/request-magic-link", async (req, res) => {
 
   const emailData = {
     sender: {
-      name: "Sender IAssisnte",
+      name: "IAssistente",
       email: "suporte@iassistente.com",
     },
     to: [
@@ -45,7 +45,7 @@ router.post("/request-magic-link", async (req, res) => {
         name: user.name,
       },
     ],
-    subject: "Hello world",
+    subject: "[IAssistente] Link de acesso",
     htmlContent: `<html><head></head><body><p>Olá${
       user.name ? ` ${user.name}` : ""
     },</p>Estamos felizes em fornecer acesso à nossa plataforma. Para fazer login com segurança, basta clicar no seguinte link:</p><a href='${magicLink}'>${magicLink}</p></body></html>`,
