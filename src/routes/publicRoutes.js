@@ -10,30 +10,33 @@ const router = express.Router();
 router.post("/request-magic-link", async (req, res) => {
   const { email } = req.body; // get the email from the request body
 
-  // Calculate the expiry time as the current time plus 30 minutes
-  const expiryTime = new Date();
-  expiryTime.setMinutes(expiryTime.getMinutes() + 30);
-
-  const user = await prisma.user.upsert({
+  await prisma.user.findUniqueOrThrow({
     where: {
       email: email,
     },
-    update: {
-      emailVerificationTokenExpiry: expiryTime,
-      emailVerificationToken: uuidv4(),
-    },
-    create: {
+  });
+
+  const token = uuidv4();
+  const expiryTime = new Date();
+  expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+
+  const user = await prisma.user.update({
+    where: {
       email: email,
+    },
+    data: {
       emailVerificationTokenExpiry: expiryTime,
-      emailVerificationToken: uuidv4(),
+      emailVerificationToken: token,
     },
   });
 
-  const magicLinkToken = user.emailVerificationToken;
-  const magicLink = `${env.FRONTEND_URL}/magic-link?token=${magicLinkToken}`;
+  const magicLink = `${env.FRONTEND_URL}/magic-link?token=${token}`;
 
-  sendEmail(user, magicLink);
-  res.sendStatus(200);
+  await sendEmail(user, magicLink);
+
+  return res.sendStatus(200).json({
+    message: "ok",
+  });
 });
 
 router.get("/", (req, res) => {
@@ -70,6 +73,34 @@ router.post("/verify-magic-link", async (req, res) => {
 
   // Respond with the JWT
   return res.json({ token: tokenJwt });
+});
+
+router.post("/stripe", async (req, res) => {
+  const { data } = req.body;
+
+  if (data.object.billing_reason !== "subscription_create") {
+    return res.status(200).json({ message: "ok" });
+  }
+
+  const customerEmail = data.object.customer_email;
+
+  const token = uuidv4();
+  const expiryTime = new Date();
+  expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+
+  const user = await prisma.user.create({
+    data: {
+      email: customerEmail,
+      emailVerificationTokenExpiry: expiryTime,
+      emailVerificationToken: token,
+    },
+  });
+
+  const magicLink = `${env.FRONTEND_URL}/magic-link?token=${token}`;
+
+  await sendEmail(user, magicLink);
+
+  return res.status(200).json({ message: "ok" });
 });
 
 export default router;

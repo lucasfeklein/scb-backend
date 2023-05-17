@@ -1,7 +1,7 @@
 import axios from "axios";
 import { env } from "../config/env.js";
 
-export function sendEmail(user, magicLink) {
+export async function sendEmail(user, magicLink) {
   const emailData = {
     sender: {
       name: "IAssistente",
@@ -19,7 +19,7 @@ export function sendEmail(user, magicLink) {
     },</p>Estamos felizes em fornecer acesso à nossa plataforma. Para fazer login com segurança, basta clicar no seguinte link:</p><a href='${magicLink}'>${magicLink}</p></body></html>`,
   };
 
-  axios
+  return axios
     .post("https://api.brevo.com/v3/smtp/email", emailData, {
       headers: {
         Accept: "application/json",
