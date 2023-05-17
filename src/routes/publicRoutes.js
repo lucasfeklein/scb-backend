@@ -10,33 +10,37 @@ const router = express.Router();
 router.post("/request-magic-link", async (req, res) => {
   const { email } = req.body; // get the email from the request body
 
-  await prisma.user.findUniqueOrThrow({
-    where: {
-      email: email,
-    },
-  });
+  try {
+    await prisma.user.findUniqueOrThrow({
+      where: {
+        email: email,
+      },
+    });
 
-  const token = uuidv4();
-  const expiryTime = new Date();
-  expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+    const token = uuidv4();
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 30);
 
-  const user = await prisma.user.update({
-    where: {
-      email: email,
-    },
-    data: {
-      emailVerificationTokenExpiry: expiryTime,
-      emailVerificationToken: token,
-    },
-  });
+    const user = await prisma.user.update({
+      where: {
+        email: email,
+      },
+      data: {
+        emailVerificationTokenExpiry: expiryTime,
+        emailVerificationToken: token,
+      },
+    });
 
-  const magicLink = `${env.FRONTEND_URL}/magic-link?token=${token}`;
+    const magicLink = `${env.FRONTEND_URL}/magic-link?token=${token}`;
 
-  await sendEmail(user, magicLink);
+    await sendEmail(user, magicLink);
 
-  return res.sendStatus(200).json({
-    message: "ok",
-  });
+    return res.sendStatus(200).json({
+      message: "ok",
+    });
+  } catch (err) {
+    return res.status(400).json(err);
+  }
 });
 
 router.get("/", (req, res) => {
