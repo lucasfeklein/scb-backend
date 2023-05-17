@@ -1,9 +1,9 @@
-import axios from "axios";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
@@ -32,39 +32,8 @@ router.post("/request-magic-link", async (req, res) => {
   const magicLinkToken = user.emailVerificationToken;
   const magicLink = `${env.FRONTEND_URL}/magic-link?token=${magicLinkToken}`;
 
-  const emailData = {
-    sender: {
-      name: "IAssistente",
-      email: "suporte@iassistente.com",
-    },
-    to: [
-      {
-        email: user.email,
-        name: user.name,
-      },
-    ],
-    subject: "[IAssistente] Link de acesso",
-    htmlContent: `<html><head></head><body><p>Olá${
-      user.name ? ` ${user.name}` : ""
-    },</p>Estamos felizes em fornecer acesso à nossa plataforma. Para fazer login com segurança, basta clicar no seguinte link:</p><a href='${magicLink}'>${magicLink}</p></body></html>`,
-  };
-
-  axios
-    .post("https://api.brevo.com/v3/smtp/email", emailData, {
-      headers: {
-        Accept: "application/json",
-        "api-key": env.BREVO_API_KEY,
-        "Content-Type": "application/json",
-      },
-    })
-    .then(function (response) {
-      console.log("Email sent successfully:", response.data);
-      res.send("Email sent successfully");
-    })
-    .catch(function (error) {
-      console.error("Error sending email:", error.response.data);
-      res.send("Error sending email");
-    });
+  sendEmail(user, magicLink);
+  res.sendStatus(200);
 });
 
 router.get("/", (req, res) => {
