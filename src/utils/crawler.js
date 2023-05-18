@@ -91,7 +91,7 @@ export async function crawlCheerio(url, crawledUrls = new Set()) {
     for (const element of links) {
       const link = $(element).attr("href");
 
-      if (!link) continue;
+      if (!link || link.includes("#")) continue;
 
       let newUrl;
       try {
