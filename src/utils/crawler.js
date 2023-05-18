@@ -8,13 +8,7 @@ import xml2js from "xml2js";
 import { env } from "../config/env.js";
 import { pinecone } from "../config/pinecone.js";
 
-export async function processWebsite({ hostname }) {
-  let urls = await crawlSitemap(`https://${hostname}`);
-
-  if (!urls) {
-    urls = await crawlCheerio(`https://${hostname}`);
-  }
-
+export async function processWebsite(urls, hostname) {
   const docs = [];
   await pinecone.init({
     apiKey: env.PINECONE_API_KEY,
@@ -24,11 +18,13 @@ export async function processWebsite({ hostname }) {
   const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
 
   for (const url of urls) {
-    const loader = new PuppeteerWebBaseLoader(url, {
-      launchOptions: { args: ["--no-sandbox", "--disable-setuid-sandbox"] },
-    });
-    const doc = await loader.load();
-    docs.push(...doc); // use spread operator to flatten the array
+    if (url.isSelected) {
+      const loader = new PuppeteerWebBaseLoader(url.url, {
+        launchOptions: { args: ["--no-sandbox", "--disable-setuid-sandbox"] },
+      });
+      const doc = await loader.load();
+      docs.push(...doc); // use spread operator to flatten the array
+    }
   }
   console.log(urls);
   const docsTextOnly = await stripHtmlFromDocs(docs);

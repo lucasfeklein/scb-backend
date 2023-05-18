@@ -32,9 +32,10 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
 });
 
 router.post("/widget", authMiddleware, async (req, res) => {
-  const { companyId, website } = req.body;
+  const { companyId, urls } = req.body;
 
-  const url = new URL(website);
+  const url = new URL(urls[0].url);
+  const hostname = url.hostname;
 
   try {
     await prisma.company.update({
@@ -42,13 +43,11 @@ router.post("/widget", authMiddleware, async (req, res) => {
         id: companyId,
       },
       data: {
-        website: url.hostname,
+        website: hostname,
       },
     });
 
-    await processWebsite({
-      hostname: url.hostname,
-    });
+    await processWebsite(urls, hostname);
 
     const company = await prisma.company.update({
       where: {
