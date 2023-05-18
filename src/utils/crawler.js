@@ -1,4 +1,5 @@
 import axios from "axios";
+import cheerio from "cheerio";
 import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
