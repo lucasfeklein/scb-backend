@@ -90,14 +90,20 @@ export async function crawlWebsite(homepageUrl) {
 
       const links = await page.$$eval("a", (links) => links.map((a) => a.href));
 
+      console.log("links");
+      console.log(links);
+
       await browser.close();
 
       const homepage_url = new URL(homepageUrl);
       const linksFiltered = links
         .filter((link) => link.startsWith(homepage_url.origin))
         .filter((link) => !link.includes("#"))
-        .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
+        // .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
         .filter((link, index, array) => array.indexOf(link) === index);
+
+      console.log("linksFiltered");
+      console.log(linksFiltered);
 
       linksFiltered.forEach((link) => allLinks.add(link));
       visitedPages.add(url);
