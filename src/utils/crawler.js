@@ -105,7 +105,9 @@ export async function crawlCheerio(url, crawledUrls = new Set()) {
         continue;
       }
 
-      const childUrls = await crawlCheerio(newUrl, crawledUrls);
+      const childUrls = newUrl.startsWith(url)
+        ? await crawlCheerio(newUrl, crawledUrls)
+        : [];
       crawledUrlsArray.push(...childUrls);
     }
   } catch (error) {
