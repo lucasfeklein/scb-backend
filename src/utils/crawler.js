@@ -63,9 +63,17 @@ async function stripHtmlFromDocs(docs) {
 
 export async function crawlCheerio(url, crawledUrls = new Set()) {
   if (crawledUrls.has(url)) return [];
+
+  console.log(`Crawling "${url}"`);
+
   crawledUrls.add(url);
 
   const crawledUrlsArray = [];
+
+  console.log("crawledUrls");
+  console.log(crawledUrls);
+  console.log("crawledUrlsArray");
+  console.log(crawledUrlsArray);
 
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
