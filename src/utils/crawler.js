@@ -85,8 +85,7 @@ export async function crawlWebsite(homepageUrl) {
     allLinks.add(homepageUrl);
 
     async function crawl(url) {
-      if (visitedPages.has(url)) return;
-
+      console.log("crawling", url);
       const page = await browser.newPage();
       await page.goto(url);
 
@@ -110,8 +109,16 @@ export async function crawlWebsite(homepageUrl) {
       linksFiltered.forEach((link) => allLinks.add(link));
       visitedPages.add(url);
 
+      console.log("allLinks inside");
+      console.log(allLinks);
+
+      console.log("visitedPages");
+      console.log(visitedPages);
+
       for (const link of linksFiltered) {
-        await crawl(link);
+        if (!visitedPages.has(link)) {
+          await crawl(link);
+        }
       }
     }
 
