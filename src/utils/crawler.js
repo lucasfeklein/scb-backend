@@ -61,19 +61,14 @@ async function stripHtmlFromDocs(docs) {
   return strippedDocs;
 }
 
-export async function crawlCheerio(url, crawledUrls = new Set()) {
+export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
+  const url = decodeURIComponent(urlRaw);
+
   if (crawledUrls.has(url)) return [];
 
   console.log(`Crawling "${url}"`);
 
   crawledUrls.add(url);
-
-  const crawledUrlsArray = [];
-
-  console.log("crawledUrls");
-  console.log(crawledUrls);
-  console.log("crawledUrlsArray");
-  console.log(crawledUrlsArray);
 
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
@@ -91,29 +86,24 @@ export async function crawlCheerio(url, crawledUrls = new Set()) {
     for (const element of links) {
       const link = $(element).attr("href");
 
-      if (!link || link.includes("#")) continue;
+      if (!link || link.includes("#") || !link.startsWith("/")) continue;
 
-      let newUrl;
-      try {
-        newUrl = new URL(link, url).href;
-      } catch (err) {
-        continue;
-      }
+      const newUrl = link;
+
+      console.log(`Found link "${newUrl}"`);
 
       const fileLinkRegex = /\.(jpg|jpeg|png|gif|svg|pdf)$/i;
       if (fileLinkRegex.test(newUrl)) {
         continue;
       }
 
-      const childUrls = newUrl.startsWith(url)
-        ? await crawlCheerio(newUrl, crawledUrls)
-        : [];
-      crawledUrlsArray.push(...childUrls);
+      const childUrls = await crawlCheerio(newUrl, crawledUrls);
+
+      crawledUrls = new Set([...Array.from(crawledUrls), ...childUrls]);
     }
   } catch (error) {
     console.error(`Failed to crawl "${url}": ${error.message}`);
   }
 
-  const decodedUrl = decodeURIComponent(url);
-  return [decodedUrl, ...crawledUrlsArray];
+  return [url, ...crawledUrls];
 }
