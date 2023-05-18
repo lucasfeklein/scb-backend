@@ -1,5 +1,4 @@
 import axios from "axios";
-import cheerio from "cheerio";
 import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
@@ -75,59 +74,43 @@ export async function crawlWebsite(homepageUrl) {
     console.log(urls);
     return urls;
   } catch (error) {
-    console.log("Site has no sitemap, going to crawl with cheerio");
+    console.log("Site has no sitemap, going to crawl with puppeteer");
     const browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
-    const page = await browser.newPage();
-    await page.goto(homepageUrl);
 
-    const links = await page.$$eval("a", (links) => links.map((a) => a.href));
+    const allLinks = new Set();
+    const visitedPages = new Set();
+
+    async function crawl(url) {
+      if (visitedPages.has(url)) return;
+
+      const page = await browser.newPage();
+      await page.goto(url);
+
+      const links = await page.$$eval("a", (links) => links.map((a) => a.href));
+
+      await browser.close();
+
+      const homepage_url = new URL(homepageUrl);
+      const linksFiltered = links
+        .filter((link) => link.startsWith(homepage_url.origin))
+        .filter((link) => !link.includes("#"))
+        .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
+        .filter((link, index, array) => array.indexOf(link) === index);
+
+      linksFiltered.forEach((link) => allLinks.add(link));
+      visitedPages.add(url);
+
+      for (const link of linksFiltered) {
+        await crawl(link);
+      }
+    }
+
+    await crawl(homepageUrl);
 
     await browser.close();
 
-    const homepage_url = new URL(homepageUrl);
-    const linksFiltered = links
-      .filter((link) => link.startsWith(homepage_url.origin))
-      .filter((link) => !link.includes("#"))
-      .filter((link, index, array) => array.indexOf(link) === index);
-    console.log(linksFiltered);
-    return linksFiltered;
+    return Array.from(allLinks);
   }
-}
-
-export async function crawlCheerio(url, crawledUrls = new Set()) {
-  // Avoid re-crawling the same URL
-  if (crawledUrls.has(url)) return [];
-  crawledUrls.add(url);
-
-  const crawledUrlsArray = [];
-
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-
-    // Find and crawl all links
-    const links = $("a").toArray(); // Convert to array
-
-    for (const element of links) {
-      const link = $(element).attr("href");
-
-      // Check if link is relative
-      if (link && link.startsWith("/") && link.length > 1) {
-        const newUrl = new URL(link, url).href; // Convert to absolute URL
-        const childUrls = await crawlCheerio(newUrl, crawledUrls); // Await the recursive call
-        crawledUrlsArray.push(...childUrls);
-      }
-      // Check if link is absolute and from the same domain
-      else if (link && link.startsWith(url)) {
-        const childUrls = await crawlCheerio(link, crawledUrls); // Await the recursive call
-        crawledUrlsArray.push(...childUrls);
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to crawl "${url}": ${error.message}`);
-  }
-  const decodedUrl = decodeURIComponent(url);
-  return [decodedUrl, ...crawledUrlsArray];
 }
