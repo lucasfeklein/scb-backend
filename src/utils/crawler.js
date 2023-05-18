@@ -105,5 +105,5 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
     console.error(`Failed to crawl "${url}": ${error.message}`);
   }
 
-  return [url, ...crawledUrls];
+  return crawledUrls;
 }
