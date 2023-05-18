@@ -82,6 +82,8 @@ export async function crawlWebsite(homepageUrl) {
     const allLinks = new Set();
     const visitedPages = new Set();
 
+    allLinks.add(homepageUrl);
+
     async function crawl(url) {
       if (visitedPages.has(url)) return;
 
@@ -99,7 +101,7 @@ export async function crawlWebsite(homepageUrl) {
       const linksFiltered = links
         .filter((link) => link.startsWith(homepage_url.origin))
         .filter((link) => !link.includes("#"))
-        // .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
+        .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
         .filter((link, index, array) => array.indexOf(link) === index);
 
       console.log("linksFiltered");
@@ -117,6 +119,14 @@ export async function crawlWebsite(homepageUrl) {
 
     await browser.close();
 
-    return Array.from(allLinks);
+    console.log("allLinks");
+    console.log(allLinks);
+
+    const arrayLinks = Array.from(allLinks);
+
+    console.log("arrayLinks");
+    console.log(arrayLinks);
+
+    return arrayLinks;
   }
 }
