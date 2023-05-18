@@ -1,7 +1,7 @@
 import express from "express";
 import { prisma } from "../config/prisma.js";
 import { authMiddleware } from "../utils/auth.js";
-import { crawlWebsite, processWebsite } from "../utils/crawler.js";
+import { crawlCheerio, processWebsite } from "../utils/crawler.js";
 
 const router = express.Router();
 
@@ -86,7 +86,7 @@ router.get("/auth-verify", authMiddleware, async (req, res) => {
 router.get("/fetch-urls", authMiddleware, async (req, res) => {
   const { website } = req.query;
   try {
-    const urls = await crawlWebsite(website);
+    const urls = await crawlCheerio(website);
     res.status(200).json({ urls });
   } catch (err) {
     console.log(err);

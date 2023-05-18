@@ -3,8 +3,7 @@ import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
-import puppeteer from "puppeteer";
-import xml2js from "xml2js";
+
 import { env } from "../config/env.js";
 import { pinecone } from "../config/pinecone.js";
 
@@ -61,80 +60,49 @@ async function stripHtmlFromDocs(docs) {
   return strippedDocs;
 }
 
-// crawler
-export async function crawlWebsite(homepageUrl) {
+export async function crawlCheerio(url, crawledUrls = new Set()) {
+  if (crawledUrls.has(url)) return [];
+  crawledUrls.add(url);
+
+  const crawledUrlsArray = [];
+
   try {
-    const response = await axios.get(`${homepageUrl}/sitemap.xml`);
-    const xmlData = response.data;
-    const parser = new xml2js.Parser();
-    const result = await parser.parseStringPromise(xmlData);
-    const urls = result.urlset.url.map((item) =>
-      item.loc[0].replace(/\n/g, "").trim()
-    );
-    console.log(urls);
-    return urls;
-  } catch (error) {
-    console.log("Site has no sitemap, going to crawl with puppeteer");
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const page = await browser.newPage();
+    const response = await axios.get(url, { responseType: "arraybuffer" });
 
-    const allLinks = new Set();
-    const visitedPages = new Set();
-
-    allLinks.add(homepageUrl);
-
-    async function crawl(url) {
-      console.log("crawling", url);
-
-      await page.goto(url);
-
-      const links = await page.$$eval("a", (links) => links.map((a) => a.href));
-
-      console.log("links");
-      console.log(links);
-
-      await browser.close();
-
-      const homepage_url = new URL(homepageUrl);
-      const linksFiltered = links
-        .filter((link) => link.startsWith(homepage_url.origin))
-        .filter((link) => !link.includes("#"))
-        .filter((link) => !/\.(jpg|jpeg|png|gif|svg|pdf)$/i.test(link))
-        .filter((link, index, array) => array.indexOf(link) === index);
-
-      console.log("linksFiltered");
-      console.log(linksFiltered);
-
-      linksFiltered.forEach((link) => allLinks.add(link));
-      visitedPages.add(url);
-
-      console.log("allLinks inside");
-      console.log(allLinks);
-
-      console.log("visitedPages");
-      console.log(visitedPages);
-
-      for (const link of linksFiltered) {
-        if (!visitedPages.has(link)) {
-          await crawl(link);
-        }
-      }
+    const contentType = response.headers["content-type"];
+    if (contentType && !contentType.includes("text/html")) {
+      return [];
     }
 
-    await crawl(homepageUrl);
+    const content = response.data.toString("utf-8");
+    const $ = cheerio.load(content);
 
-    await browser.close();
+    const links = $("a").toArray();
 
-    console.log("allLinks");
-    console.log(allLinks);
+    for (const element of links) {
+      const link = $(element).attr("href");
 
-    const arrayLinks = Array.from(allLinks);
+      if (!link) continue;
 
-    console.log("arrayLinks");
-    console.log(arrayLinks);
+      let newUrl;
+      try {
+        newUrl = new URL(link, url).href;
+      } catch (err) {
+        continue;
+      }
 
-    return arrayLinks;
+      const fileLinkRegex = /\.(jpg|jpeg|png|gif|svg|pdf)$/i;
+      if (fileLinkRegex.test(newUrl)) {
+        continue;
+      }
+
+      const childUrls = await crawlCheerio(newUrl, crawledUrls);
+      crawledUrlsArray.push(...childUrls);
+    }
+  } catch (error) {
+    console.error(`Failed to crawl "${url}": ${error.message}`);
   }
+
+  const decodedUrl = decodeURIComponent(url);
+  return [decodedUrl, ...crawledUrlsArray];
 }
