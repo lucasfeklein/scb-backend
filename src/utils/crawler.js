@@ -4,6 +4,7 @@ import { PuppeteerWebBaseLoader } from "langchain/document_loaders/web/puppeteer
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
+import puppeteer from "puppeteer";
 import xml2js from "xml2js";
 import { env } from "../config/env.js";
 import { pinecone } from "../config/pinecone.js";
@@ -62,7 +63,7 @@ async function stripHtmlFromDocs(docs) {
 }
 
 // crawler
-export async function crawlSitemap(homepageUrl) {
+export async function crawlWebsite(homepageUrl) {
   try {
     const response = await axios.get(`${homepageUrl}/sitemap.xml`);
     const xmlData = response.data;
@@ -75,7 +76,23 @@ export async function crawlSitemap(homepageUrl) {
     return urls;
   } catch (error) {
     console.log("Site has no sitemap, going to crawl with cheerio");
-    return "";
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+    await page.goto(homepageUrl);
+
+    const links = await page.$$eval("a", (links) => links.map((a) => a.href));
+
+    await browser.close();
+
+    const homepage_url = new URL(homepageUrl);
+    const linksFiltered = links
+      .filter((link) => link.startsWith(homepage_url.origin))
+      .filter((link) => !link.includes("#"))
+      .filter((link, index, array) => array.indexOf(link) === index);
+    console.log(linksFiltered);
+    return linksFiltered;
   }
 }
 

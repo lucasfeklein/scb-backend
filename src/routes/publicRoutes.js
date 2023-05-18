@@ -35,7 +35,7 @@ router.post("/request-magic-link", async (req, res) => {
 
     await sendEmail(user, magicLink);
 
-    return res.sendStatus(200).json({
+    return res.status(200).json({
       message: "ok",
     });
   } catch (err) {
