@@ -88,7 +88,7 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
 
       if (!link || link.includes("#") || !link.startsWith("/")) continue;
 
-      const newUrl = link;
+      const newUrl = new URL(link, url).href;
 
       console.log(`Found link "${newUrl}"`);
 
