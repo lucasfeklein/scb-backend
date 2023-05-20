@@ -61,7 +61,7 @@ wss.on("connection", async (ws, request) => {
 
     const question = message.toString();
 
-    const documents = await vectorStore.similaritySearch(question, 5);
+    const documents = await vectorStore.similaritySearch(question, 8);
     let bigText = "";
 
     console.log(bigText);
