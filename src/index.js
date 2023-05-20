@@ -71,13 +71,13 @@ wss.on("connection", async (ws, request) => {
       bigText += pageContent.replace(/\n/g, " ");
     }
 
-    const prompt = `You are a helpful chatbot who loves to help people. You speak in the user's language. Your name is Chatbot and you're designed to answer only based on the Content provided, if it's not about the content say that you're not able to answer it.
+    const prompt = `You are a helpful chatbot who loves to help people. Your name is Chatbot and you're designed to answer only based on the Content provided, if it's not about the content say that you're not able to answer it.
 
 Content: ###
 ${bigText}
 ###
 
-Respond using markdown.
+If there is a list of things, answer in a list format.
 `;
 
     const completion = await openai.createChatCompletion({
