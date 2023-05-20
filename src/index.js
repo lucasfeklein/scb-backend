@@ -61,8 +61,10 @@ wss.on("connection", async (ws, request) => {
 
     const question = message.toString();
 
-    const documents = await vectorStore.similaritySearch(question, 10);
+    const documents = await vectorStore.similaritySearch(question, 5);
     let bigText = "";
+
+    console.log(bigText);
 
     for (let i = 0; i < documents.length; i++) {
       let pageContent = documents[i].pageContent;
@@ -75,7 +77,7 @@ Content: ###
 ${bigText}
 ###
 
-Respond using markdown. If there's a list of things, answer in a markdown list format. When using lists, if there's a clear title or separator, use markdown bold to highlight the text.
+Respond using markdown. If there's a list of things, answer in a markdown list format.
 `;
 
     const completion = await openai.createChatCompletion({
