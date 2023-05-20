@@ -75,7 +75,7 @@ Content: ###
 ${bigText}
 ###
 
-Respond using markdown. If there's a list of things, answer in a markdown list format. Highlight using bold when necessary.
+Respond using markdown. If there's a list of things, answer in a markdown list format. When using lists, if there's a clear title or separator, use markdown bold to highlight the text.
 `;
 
     const completion = await openai.createChatCompletion({
