@@ -77,7 +77,7 @@ Content: ###
 ${bigText}
 ###
 
-If there is a list of things, answer in a list format.
+If there is a list of things, provide your response as a markdown list, with each item separated.
 `;
 
     const completion = await openai.createChatCompletion({
