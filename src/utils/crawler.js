@@ -73,6 +73,8 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
 
   crawledUrls.add(url);
 
+  const foundUrls = [];
+
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
 
@@ -100,13 +102,12 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
         continue;
       }
 
-      const childUrls = await crawlCheerio(newUrl, crawledUrls);
-
-      crawledUrls = new Set([...Array.from(crawledUrls), ...childUrls]);
+      await crawlCheerio(newUrl, crawledUrls);
+      foundUrls.push(newUrl);
     }
   } catch (error) {
     console.error(`Failed to crawl "${url}": ${error.message}`);
   }
 
-  return crawledUrls;
+  return foundUrls;
 }
