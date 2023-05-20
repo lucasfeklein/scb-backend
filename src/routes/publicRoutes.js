@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
+import { priceToPlan } from "../utils/priceToPlan.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
@@ -86,6 +87,7 @@ router.post("/stripe", async (req, res) => {
     return res.status(200).json({ message: "ok" });
   }
 
+  const priceId = data.object.lines.data[0].price.id;
   const customerEmail = data.object.customer_email;
 
   const token = uuidv4();
@@ -97,6 +99,7 @@ router.post("/stripe", async (req, res) => {
       email: customerEmail,
       emailVerificationTokenExpiry: expiryTime,
       emailVerificationToken: token,
+      plan: priceToPlan[priceId],
     },
   });
 
