@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
-import { priceToPlan } from "../utils/priceToPlan.js";
+import { priceToPlan } from "../utils/plans.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();

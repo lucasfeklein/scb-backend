@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "../config/prisma.js";
 import { authMiddleware } from "../utils/auth.js";
 import { crawlCheerio, processWebsite } from "../utils/crawler.js";
+import { planToNumberOfUrls } from "../utils/plans.js";
 
 const router = express.Router();
 
@@ -29,6 +30,22 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
 
 router.post("/widget", authMiddleware, async (req, res) => {
   const { companyId, urls } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: req.userId,
+    },
+  });
+
+  const userPlan = user.plan;
+  const planLimit = planToNumberOfUrls[userPlan];
+  const totalUrls = urls.length;
+
+  if (true) {
+    return res.status(400).json({
+      error: `You have exceeded your plan limit of ${planLimit} urls`,
+    });
+  }
 
   const url = new URL(urls[0].url);
   const hostname = url.hostname;

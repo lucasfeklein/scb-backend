@@ -6,3 +6,9 @@ export const priceToPlan = {
   price_1N8bPSHMjqTlDAUmrrjQOLxk: "enterprise",
   price_1N8bPSHMjqTlDAUmKNVep7uo: "enterprise",
 };
+
+export const planToNumberOfUrls = {
+  basic: 25,
+  pro: 100,
+  enterprise: 500,
+};
