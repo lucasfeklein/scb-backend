@@ -64,6 +64,9 @@ async function stripHtmlFromDocs(docs) {
 export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
   const url = decodeURIComponent(urlRaw);
 
+  console.log("crawledUrls");
+  console.log(crawledUrls);
+
   if (crawledUrls.has(url)) return [];
 
   console.log(`Crawling "${url}"`);

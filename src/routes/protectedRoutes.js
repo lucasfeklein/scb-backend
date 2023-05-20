@@ -104,10 +104,10 @@ router.get("/fetch-urls", authMiddleware, async (req, res) => {
   const { website } = req.query;
   try {
     const urls = await crawlCheerio(website);
-    res.status(200).json({ urls });
+    return res.status(200).json({ urls });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: err });
+    return res.status(500).json({ error: err });
   }
 });
 
