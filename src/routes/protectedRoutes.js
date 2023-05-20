@@ -41,9 +41,9 @@ router.post("/widget", authMiddleware, async (req, res) => {
   const planLimit = planToNumberOfUrls[userPlan];
   const totalUrls = urls.length;
 
-  if (true) {
+  if (totalUrls > planLimit) {
     return res.status(400).json({
-      error: `You have exceeded your plan limit of ${planLimit} urls`,
+      error: `You have sent ${totalUrls} urls but your plan limit is ${planLimit} urls`,
     });
   }
 
