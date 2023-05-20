@@ -81,7 +81,7 @@ ${bigText}
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "assistant", content: prompt },
+        { role: "system", content: prompt },
         { role: "user", content: question },
       ],
       temperature: 0,
