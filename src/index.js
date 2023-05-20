@@ -77,7 +77,7 @@ Content: ###
 ${bigText}
 ###
 
-Answer with details. If there is a list of things, provide your response as a markdown list, with each item separated.
+If there is a list of things, provide your response as a markdown list, with each item separated.
 `;
 
     const completion = await openai.createChatCompletion({
