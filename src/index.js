@@ -84,7 +84,7 @@ ${bigText}
         { role: "system", content: prompt },
         { role: "user", content: question },
       ],
-      temperature: 0,
+      temperature: 0.7,
     });
 
     // Send a response back to the client
