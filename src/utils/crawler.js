@@ -88,6 +88,10 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
 
     const links = $("a").toArray();
 
+    if (links.length === 0 && crawledUrls.size === 1) {
+      foundUrls.add(url);
+    }
+
     for (const element of links) {
       const link = $(element).attr("href");
 
