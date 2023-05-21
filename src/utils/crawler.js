@@ -103,7 +103,8 @@ export async function crawlCheerio(urlRaw, crawledUrls = new Set()) {
         continue;
       }
 
-      await crawlCheerio(newUrlRaw, crawledUrls);
+      const newFoundUrls = await crawlCheerio(newUrlRaw, crawledUrls);
+      newFoundUrls.forEach((newFoundUrl) => foundUrls.add(newFoundUrl));
       foundUrls.add(newUrl);
     }
   } catch (error) {
