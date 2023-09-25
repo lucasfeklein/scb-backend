@@ -11,7 +11,7 @@ An intelligent Chatbot that extracts information from a client's website and del
 
 ## Chat DEMO
 
-<img src="./scbgif.gif" width="300"/>
+<img src="https://github.com/lucasfeklein/scb-backend/blob/main/scbgif.gif" width="300"/>
 
 ## Project Development
 
