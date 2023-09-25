@@ -9,6 +9,10 @@ An intelligent Chatbot that extracts information from a client's website and del
 - [scb-widget](https://github.com/lucasfeklein/scb-widget)
 - [scb-frontend](https://github.com/lucasfeklein/scb-frontend)
 
+## Chat DEMO
+
+![Chatbot gif](./scbgif.gif)
+
 ## Project Development
 
 The Smart Chatbot project is a comprehensive solution that leverages advanced technologies to provide a seamless and efficient experience for both website owners and their visitors. Here's an overview of the key components and technologies used in its development:
